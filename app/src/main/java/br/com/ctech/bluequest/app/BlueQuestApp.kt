@@ -31,28 +31,6 @@ fun BlueQuestApp(viewModel: AppViewModel = hiltViewModel()) {
     when (val state = sessionState) {
         SessionState.Loading -> Box(Modifier.fillMaxSize().background(BQColors.bg0))
         is SessionState.SignedOut -> AuthRoute()
-        is SessionState.SignedIn -> SignedInPlaceholder(name = state.user?.name, onLogout = viewModel::logout)
-    }
-}
-
-@Composable
-private fun SignedInPlaceholder(name: String?, onLogout: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BQColors.bg0)
-            .safeDrawingPadding()
-            .padding(horizontal = BQSpacing.screenPadding),
-        verticalArrangement = Arrangement.spacedBy(BQSpacing.sp6, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Olá, ${name ?: "..."}", style = BQFont.display(BQTypeScale.title1))
-
-        BQButton(
-            title = "Sair",
-            onClick = onLogout,
-            modifier = Modifier.fillMaxWidth(),
-            variant = BQButtonVariant.Danger,
-        )
+        is SessionState.SignedIn -> MainScreen(userName = state.user?.name, onLogout = viewModel::logout)
     }
 }
