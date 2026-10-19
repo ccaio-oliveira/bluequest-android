@@ -7,7 +7,6 @@ import br.com.ctech.bluequest.data.network.ApiError
 import br.com.ctech.bluequest.data.session.SessionManager
 import br.com.ctech.bluequest.data.session.SessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

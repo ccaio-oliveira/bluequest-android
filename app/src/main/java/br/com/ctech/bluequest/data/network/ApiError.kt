@@ -3,7 +3,7 @@ package br.com.ctech.bluequest.data.network
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import okio.IOException
+import java.io.IOException
 import retrofit2.HttpException
 
 sealed class ApiError(message: String, cause: Throwable? = null) : Exception(message, cause) {
