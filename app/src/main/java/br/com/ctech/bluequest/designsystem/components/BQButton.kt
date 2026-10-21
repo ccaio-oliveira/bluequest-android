@@ -1,5 +1,6 @@
 package br.com.ctech.bluequest.designsystem.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +26,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -48,6 +51,7 @@ enum class BQButtonSize(val height: Dp, val fontSize: TextUnit, val horizontalPa
     Small(34.dp, 13.sp, 14.dp);
 
     val cornerRadius: Dp get() = if (this == Small) BQRadius.small else BQRadius.medium
+    val iconSize: Dp get() = if (this == Small) 16.dp else 20.dp
 }
 
 @Composable
@@ -55,6 +59,7 @@ fun BQButton(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    @DrawableRes icon: Int? = null,
     variant: BQButtonVariant = BQButtonVariant.Primary,
     size: BQButtonSize = BQButtonSize.Medium,
     enabled: Boolean = true,
@@ -92,6 +97,13 @@ fun BQButton(
                 modifier = Modifier.size(18.dp),
                 color = variant.foreground,
                 strokeWidth = 2.dp,
+            )
+        } else if (icon != null) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                tint = variant.foreground,
+                modifier = Modifier.size(size.iconSize),
             )
         }
 

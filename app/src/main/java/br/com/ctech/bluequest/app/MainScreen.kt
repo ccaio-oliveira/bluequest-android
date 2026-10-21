@@ -13,11 +13,15 @@ import br.com.ctech.bluequest.designsystem.components.BQTabBarItem
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import br.com.ctech.bluequest.designsystem.BQColors
 import br.com.ctech.bluequest.designsystem.components.BQButton
 import br.com.ctech.bluequest.designsystem.components.BQButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQEmptyState
 import br.com.ctech.bluequest.designsystem.components.BQTabBar
+import br.com.ctech.bluequest.features.challenges.ChallengesListKey
+import br.com.ctech.bluequest.features.challenges.rememberChallengesEntries
 
 enum class MainTab(val item: BQTabBarItem) {
     Home(BQTabBarItem("Início", R.drawable.ic_home, R.drawable.ic_home_fill)),
@@ -30,6 +34,8 @@ enum class MainTab(val item: BQTabBarItem) {
 @Composable
 fun MainScreen(userName: String?, onLogout: () -> Unit) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Challenges) }
+    val challengesBackStack = rememberNavBackStack(ChallengesListKey)
+    val challengesEntries = rememberChallengesEntries(challengesBackStack)
 
     Scaffold(
         containerColor = BQColors.bg0,
@@ -66,10 +72,9 @@ fun MainScreen(userName: String?, onLogout: () -> Unit) {
                     message = "Gráficos de carga e peso, recordes e avaliações físicas com comparação.",
                 )
 
-                MainTab.Challenges -> BQEmptyState(
-                    icon = R.drawable.ic_flag_fill,
-                    title = "Desafios em construção",
-                    message = "A lista dos seus desafios, o ranking e as tarefas do dia chegam na próxima etapa.",
+                MainTab.Challenges -> NavDisplay(
+                    entries = challengesEntries,
+                    onBack = { challengesBackStack.removeLastOrNull() }
                 )
 
                 MainTab.Profile -> BQEmptyState(

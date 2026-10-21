@@ -2,6 +2,7 @@ package br.com.ctech.bluequest.data.network
 
 import br.com.ctech.bluequest.BuildConfig
 import br.com.ctech.bluequest.data.auth.AuthApi
+import br.com.ctech.bluequest.data.challenges.ChallengeApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,4 +40,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideChallengeApi(retrofit: Retrofit): ChallengeApi = retrofit.create(ChallengeApi::class.java)
 }
