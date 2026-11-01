@@ -34,10 +34,9 @@ import br.com.ctech.bluequest.designsystem.BQFont
 import br.com.ctech.bluequest.designsystem.BQRadius
 import br.com.ctech.bluequest.designsystem.BQSpacing
 import br.com.ctech.bluequest.designsystem.BQTypeScale
-import br.com.ctech.bluequest.designsystem.components.BQButton
-import br.com.ctech.bluequest.designsystem.components.BQButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQChip
 import br.com.ctech.bluequest.designsystem.components.BQEmptyState
+import br.com.ctech.bluequest.designsystem.components.BQErrorState
 import br.com.ctech.bluequest.designsystem.components.BQOverline
 import br.com.ctech.bluequest.designsystem.components.ChallengeCard
 
@@ -75,7 +74,7 @@ fun ChallengesScreen(
     val challenges = state.challenges
 
     when {
-        challenges == null && state.errorMessage != null -> ErrorState(message = state.errorMessage, onRetry = onRetry)
+        challenges == null && state.errorMessage != null -> BQErrorState(message = state.errorMessage, onRetry = onRetry)
 
         challenges == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = BQColors.text2)
@@ -177,25 +176,6 @@ private fun NoChallengesInFilter(filter: ChallengeFilter) {
             style = BQFont.body(BQTypeScale.caption),
             color = BQColors.text3,
             textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = BQSpacing.sp10),
-        verticalArrangement = Arrangement.spacedBy(BQSpacing.sp4, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(text = message, color = BQColors.text2, textAlign = TextAlign.Center)
-        BQButton(
-            title = "Tentar de novo",
-            onClick = onRetry,
-            icon = R.drawable.ic_refresh,
-            variant = BQButtonVariant.Secondary
         )
     }
 }
