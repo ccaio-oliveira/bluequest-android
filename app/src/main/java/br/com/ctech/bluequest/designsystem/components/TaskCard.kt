@@ -32,6 +32,7 @@ import br.com.ctech.bluequest.designsystem.BQFont
 import br.com.ctech.bluequest.designsystem.BQRadius
 import br.com.ctech.bluequest.designsystem.BQTypeScale
 import br.com.ctech.bluequest.domain.models.OccurrenceState
+import br.com.ctech.bluequest.domain.models.WeeklyProgress
 
 @Composable
 fun TaskCard(
@@ -41,31 +42,47 @@ fun TaskCard(
     deadlineText: String,
     hasPhoto: Boolean,
     modifier: Modifier = Modifier,
+    weekly: WeeklyProgress? = null,
+    isSending: Boolean = false,
     onComplete: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(BQRadius.medium)
     val isAvailable = state == OccurrenceState.Available
+    val isMandatory = isAvailable && weekly?.isMandatory == true && !isSending
 
-    val meta = when (state) {
-        OccurrenceState.Expired -> "Expirou às $deadlineText"
-        OccurrenceState.Completed -> "Concluída"
-        OccurrenceState.Future -> "Disponível em breve"
-        OccurrenceState.Available -> "Disponível até $deadlineText"
+    val meta = when {
+        isSending -> "Aguardando envio"
+        weekly != null -> weeklyText(state, weekly, deadlineText)
+        state == OccurrenceState.Expired -> "Expirou às $deadlineText"
+        state == OccurrenceState.Completed -> "Concluída"
+        state == OccurrenceState.Future -> "Disponível em breve"
+        else -> "Disponível até $deadlineText"
     }
 
-    val metaColor = if (state == OccurrenceState.Expired) BQColors.red else BQColors.text3
+    val metaColor = when {
+        isSending -> BQColors.blueBright
+        state == OccurrenceState.Expired -> BQColors.red
+        isMandatory -> BQColors.amber
+        else -> BQColors.text3
+    }
+
+    val borderColor = when {
+        isMandatory -> BQColors.amber
+        isAvailable || isSending -> BQColors.stroke2
+        else -> BQColors.stroke1
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (isAvailable) 1f else 0.6f)
+            .alpha(if (isAvailable || isSending) 1f else 0.6f)
             .background(BQColors.bg1, shape)
-            .border(1.dp, if (isAvailable) BQColors.stroke2 else BQColors.stroke1, shape)
+            .border(1.dp, borderColor, shape)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StateButton(state = state, onComplete = onComplete)
+        StateButton(state = state, isSending = isSending, onComplete = onComplete)
 
         Column(
             modifier = Modifier.weight(1f),
@@ -82,9 +99,23 @@ fun TaskCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = meta, style = BQFont.body(BQTypeScale.caption), color = metaColor)
+                if (isMandatory) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_warning_fill),
+                        contentDescription = null,
+                        tint = BQColors.amber,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
 
-                if (hasPhoto) {
+                Text(
+                    text = meta,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = BQFont.body(BQTypeScale.caption),
+                    color = metaColor
+                )
+
+                if (hasPhoto && !isSending) {
                     Icon(
                         painter = painterResource(R.drawable.ic_photo_camera_fill),
                         contentDescription = "Exige foto",
@@ -103,25 +134,44 @@ fun TaskCard(
     }
 }
 
-@Composable
-private fun StateButton(state: OccurrenceState, onComplete: (() -> Unit)?) {
-    val (icon, tint, background) = when (state) {
-        OccurrenceState.Completed -> Triple(R.drawable.ic_check, BQColors.green, BQColors.greenDim)
-        OccurrenceState.Expired -> Triple(R.drawable.ic_close, BQColors.red, BQColors.redDim)
-        OccurrenceState.Future -> Triple(R.drawable.ic_schedule, BQColors.text3, BQColors.bg2)
-        OccurrenceState.Available -> Triple(R.drawable.ic_radio_unchecked, BQColors.blueBright, BQColors.bg2)
+private fun weeklyText(state: OccurrenceState, weekly: WeeklyProgress,  deadlineText: String): String {
+    val progress = "${weekly.done} de ${weekly.target} na semana"
+
+    return when (state) {
+        OccurrenceState.Completed -> "Concluída · $progress"
+        OccurrenceState.Expired -> "Meta da semana não batida"
+        OccurrenceState.Future -> progress
+        OccurrenceState.Available -> {
+            if (weekly.isMandatory) {
+                val days = if (weekly.daysLeft == 1) "1 dia" else "${weekly.daysLeft} dias"
+                "Obrigatória · faltam ${weekly.remaining} em $days"
+            } else {
+                "$progress · até $deadlineText"
+            }
+        }
     }
-    val canComplete = state == OccurrenceState.Available && onComplete != null
+}
+
+@Composable
+private fun StateButton(state: OccurrenceState, isSending: Boolean, onComplete: (() -> Unit)?) {
+    val (icon, tint, background) = when {
+        isSending -> Triple(R.drawable.ic_arrow_upward, BQColors.blueBright, BQColors.blueDim)
+        state == OccurrenceState.Completed -> Triple(R.drawable.ic_check, BQColors.green, BQColors.greenDim)
+        state == OccurrenceState.Expired -> Triple(R.drawable.ic_close, BQColors.red, BQColors.redDim)
+        state == OccurrenceState.Future -> Triple(R.drawable.ic_schedule, BQColors.text3, BQColors.bg2)
+        else -> Triple(R.drawable.ic_radio_unchecked, BQColors.blueBright, BQColors.bg2)
+    }
+    val isAvailable = state == OccurrenceState.Available && !isSending
 
     Box(
         modifier = Modifier
             .size(44.dp)
             .clip(CircleShape)
             .background(background)
-            .border(2.dp, if (state == OccurrenceState.Available) BQColors.blueBright else Color.Transparent, CircleShape)
+            .border(2.dp, if (isAvailable) BQColors.blueBright else Color.Transparent, CircleShape)
             .then(
-                if (canComplete) {
-                    Modifier.clickable(role = Role.Button, onClickLabel = "Concluir", onClick = { onComplete?.invoke() })
+                if (isAvailable && onComplete != null) {
+                    Modifier.clickable(role = Role.Button, onClickLabel = "Concluir", onClick = onComplete)
                 } else {
                     Modifier
                 }

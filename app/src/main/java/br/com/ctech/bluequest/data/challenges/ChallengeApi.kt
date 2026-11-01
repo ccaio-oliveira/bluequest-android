@@ -6,13 +6,19 @@ import br.com.ctech.bluequest.domain.models.ChallengeState
 import br.com.ctech.bluequest.domain.models.ChallengeStats
 import br.com.ctech.bluequest.domain.models.ChallengeSummary
 import br.com.ctech.bluequest.domain.models.ChallengeTask
+import br.com.ctech.bluequest.domain.models.OccurrenceState
 import br.com.ctech.bluequest.domain.models.TaskRecurrence
+import br.com.ctech.bluequest.domain.models.TodayOccurrence
+import br.com.ctech.bluequest.domain.models.WeeklyProgress
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.OffsetDateTime
 
 interface ChallengeApi {
     @GET("challenges")
@@ -20,6 +26,12 @@ interface ChallengeApi {
 
     @GET("challenges/{id}")
     suspend fun challenge(@Path("id") id: Int): ChallengeDetailDto
+
+    @GET("today")
+    suspend fun today(): TodayResponse
+
+    @POST("completions")
+    suspend fun complete(@Body body: CompleteTaskRequest)
 }
 
 @Serializable
@@ -156,3 +168,61 @@ data class ChallengeTaskDto(
         }
     )
 }
+
+@Serializable
+data class TodayResponse(val occurrences: List<OccurrenceDto>)
+
+@Serializable
+data class OccurrenceDto(
+    @SerialName("task_id") val taskId: Int,
+    @SerialName("challenge_id") val challengeId: Int,
+    @SerialName("challenge_name") val challengeName: String,
+    val name: String,
+    val points: Int,
+    @SerialName("photo_requirement") val photoRequirement: String,
+    @SerialName("deadline_at") val deadlineAt: String,
+    @SerialName("occurrence_date") val occurrenceDate: String,
+    val state: String,
+    @SerialName("points_awarded") val pointsAwarded: Int? = null,
+    val weekly: WeeklyProgressDto? = null,
+) {
+    fun toDomain() = TodayOccurrence(
+        taskId = taskId,
+        challengeId = challengeId,
+        challengeName = challengeName,
+        name = name,
+        points = points,
+        pointsAwarded = pointsAwarded,
+        state = when (state) {
+            "future" -> OccurrenceState.Future
+            "completed" -> OccurrenceState.Completed
+            "expired" -> OccurrenceState.Expired
+            else -> OccurrenceState.Available
+        },
+        deadline = OffsetDateTime.parse(deadlineAt),
+        occurrenceDate = LocalDate.parse(occurrenceDate),
+        hasPhoto = photoRequirement != "none",
+        weekly = weekly?.toDomain(),
+    )
+}
+
+@Serializable
+data class WeeklyProgressDto(
+    val target: Int,
+    val done: Int,
+    @SerialName("days_left") val daysLeft: Int,
+    @SerialName("is_mandatory") val isMandatory: Boolean,
+) {
+    fun toDomain() = WeeklyProgress(
+        target = target,
+        done = done,
+        daysLeft = daysLeft,
+        isMandatory = isMandatory
+    )
+}
+
+@Serializable
+data class CompleteTaskRequest(
+    @SerialName("task_id") val taskId: Int,
+    @SerialName("occurrence_date") val occurrenceDate: String
+)
