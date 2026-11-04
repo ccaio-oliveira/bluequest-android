@@ -12,9 +12,12 @@ import br.com.ctech.bluequest.domain.models.TodayOccurrence
 import br.com.ctech.bluequest.domain.models.WeeklyProgress
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import java.time.LocalDate
 import java.time.LocalTime
@@ -32,6 +35,10 @@ interface ChallengeApi {
 
     @POST("completions")
     suspend fun complete(@Body body: CompleteTaskRequest)
+
+    @Multipart
+    @POST("uploads/completion-photo")
+    suspend fun uploadCompletionPhoto(@Part photo: MultipartBody.Part): UploadedPhotoResponse
 }
 
 @Serializable
@@ -224,5 +231,9 @@ data class WeeklyProgressDto(
 @Serializable
 data class CompleteTaskRequest(
     @SerialName("task_id") val taskId: Int,
-    @SerialName("occurrence_date") val occurrenceDate: String
+    @SerialName("occurrence_date") val occurrenceDate: String,
+    @SerialName("photo_path") val photoPath: String? = null,
 )
+
+@Serializable
+data class UploadedPhotoResponse(val path: String)

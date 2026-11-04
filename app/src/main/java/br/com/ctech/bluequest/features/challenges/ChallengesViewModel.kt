@@ -1,8 +1,11 @@
 package br.com.ctech.bluequest.features.challenges
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.ctech.bluequest.data.challenges.ChallengeRepository
+import br.com.ctech.bluequest.data.challenges.PhotoProcessor
+import br.com.ctech.bluequest.data.challenges.UnreadablePhotoException
 import br.com.ctech.bluequest.data.network.ApiError
 import br.com.ctech.bluequest.domain.models.ChallengeState
 import br.com.ctech.bluequest.domain.models.ChallengeSummary
@@ -55,6 +58,7 @@ data class ChallengesUiState(
 @HiltViewModel
 class ChallengesViewModel @Inject constructor(
     private val repository: ChallengeRepository,
+    private val photoProcessor: PhotoProcessor,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChallengesUiState())
     val uiState: StateFlow<ChallengesUiState> = _uiState.asStateFlow()
@@ -73,14 +77,16 @@ class ChallengesViewModel @Inject constructor(
         _uiState.update { it.copy(filter = filter) }
     }
 
-    fun completeTask(occurrence: TodayOccurrence) {
+    fun completeTask(occurrence: TodayOccurrence, photo: Uri? = null) {
         if (occurrence.taskId in _uiState.value.sendingTaskIds) return
 
         _uiState.update { it.copy(sendingTaskIds = it.sendingTaskIds + occurrence.taskId) }
 
         viewModelScope.launch {
             try {
-                repository.completeTask(occurrence.taskId, occurrence.occurrenceDate)
+                val photoPath = photo?.let { repository.uploadCompletionPhoto(photoProcessor.jpegData(it)) }
+
+                repository.completeTask(occurrence.taskId, occurrence.occurrenceDate, photoPath)
                 _uiState.update { it.markingCompleted(occurrence).copy(pointsPop = occurrence.points) }
             } catch (e: ApiError) {
                 val alreadyCompleted = e is ApiError.DomainRule && e.reason == "occurrence_not_available" && e.state == "completed"
@@ -89,6 +95,8 @@ class ChallengesViewModel @Inject constructor(
                     if (alreadyCompleted) it.markingCompleted(occurrence)
                     else it.copy(toastMessage = "${occurrence.name}: ${e.message}")
                 }
+            } catch (e: UnreadablePhotoException) {
+                _uiState.update { it.copy(toastMessage = "${occurrence.name}: ${e.message}") }
             }
 
             _uiState.update { it.copy(sendingTaskIds = it.sendingTaskIds - occurrence.taskId) }

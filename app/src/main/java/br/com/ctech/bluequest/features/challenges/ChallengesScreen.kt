@@ -1,5 +1,6 @@
 package br.com.ctech.bluequest.features.challenges
 
+import android.net.Uri
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -24,7 +25,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -55,6 +58,7 @@ import br.com.ctech.bluequest.designsystem.components.TaskCard
 import br.com.ctech.bluequest.domain.models.TodayOccurrence
 import kotlinx.coroutines.delay
 import java.time.LocalDate
+import androidx.compose.runtime.setValue
 
 
 @Composable
@@ -89,11 +93,12 @@ fun ChallengesScreen(
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     onOpenChallenge: (Int) -> Unit,
-    onCompleteTask: (TodayOccurrence) -> Unit,
+    onCompleteTask: (TodayOccurrence, Uri?) -> Unit,
     onPointsPopFinished: () -> Unit,
     onToastFinished: () -> Unit,
 ) {
     val challenges = state.challenges
+    var photoTaskId by rememberSaveable { mutableStateOf<Int?>(null) }
 
     Box(Modifier.fillMaxSize()) {
         when {
@@ -140,7 +145,10 @@ fun ChallengesScreen(
                         TodayTasks(
                             occurrences = state.occurrences,
                             sendingTaskIds = state.sendingTaskIds,
-                            onCompleteTask = onCompleteTask,
+                            onCompleteTask = { occurrence ->
+                                if (occurrence.hasPhoto) photoTaskId = occurrence.taskId
+                                else onCompleteTask(occurrence, null)
+                            },
                             modifier = Modifier.padding(bottom = 10.dp)
                         )
                     }
@@ -199,6 +207,18 @@ fun ChallengesScreen(
             }
         }
 
+        state.occurrences.firstOrNull { it.taskId == photoTaskId }?.let { occurrence ->
+            CompletionPhotoSheet(
+                taskName = occurrence.name,
+                points = occurrence.points,
+                onPhotoSelected = { photo ->
+                    photoTaskId = null
+                    onCompleteTask(occurrence, photo)
+                },
+                onDismiss = { photoTaskId = null}
+            )
+        }
+
         state.pointsPop?.let { points ->
             PointsPop(
                 points = points,
@@ -215,7 +235,11 @@ fun ChallengesScreen(
                 onFinished = onToastFinished,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = BQSpacing.sp3, start = BQSpacing.screenPadding, end = BQSpacing.screenPadding)
+                    .padding(
+                        top = BQSpacing.sp3,
+                        start = BQSpacing.screenPadding,
+                        end = BQSpacing.screenPadding
+                    )
             )
         }
     }
@@ -297,7 +321,7 @@ private fun TodayTasks(
                         hasPhoto = occurrence.hasPhoto,
                         weekly = occurrence.weekly,
                         isSending = occurrence.taskId in sendingTaskIds,
-                        onComplete = if (occurrence.hasPhoto) null else ({ onCompleteTask(occurrence) })
+                        onComplete = { onCompleteTask(occurrence) }
                     )
                 }
             }
