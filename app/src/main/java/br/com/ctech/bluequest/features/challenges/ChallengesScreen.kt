@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -58,7 +59,6 @@ import br.com.ctech.bluequest.designsystem.components.TaskCard
 import br.com.ctech.bluequest.domain.models.TodayOccurrence
 import kotlinx.coroutines.delay
 import java.time.LocalDate
-import androidx.compose.runtime.setValue
 
 
 @Composable
@@ -317,7 +317,7 @@ private fun TodayTasks(
                         name = occurrence.name,
                         points = occurrence.points,
                         state = occurrence.state,
-                        deadlineText = deadlineText(occurrence.deadline),
+                        deadlineText = localTimeText(occurrence.deadline),
                         hasPhoto = occurrence.hasPhoto,
                         weekly = occurrence.weekly,
                         isSending = occurrence.taskId in sendingTaskIds,

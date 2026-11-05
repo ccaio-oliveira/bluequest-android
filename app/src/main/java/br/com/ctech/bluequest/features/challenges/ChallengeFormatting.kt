@@ -13,6 +13,7 @@ private val dayMonth = DateTimeFormatter.ofPattern("d MMM", portuguese)
 private val weekdayDayMonth = DateTimeFormatter.ofPattern("EEEE, d MMM", portuguese)
 private val hourMinute = DateTimeFormatter.ofPattern("HH:mm")
 private val weekdayNames = mapOf(1 to "dom", 2 to "seg", 3 to "ter", 4 to "qua", 5 to "qui", 6 to "sex", 7 to "sáb")
+private val weekdayFullDate = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", portuguese)
 
 fun periodText(start: LocalDate, end: LocalDate): String {
     val endText = dayMonthText(end)
@@ -37,7 +38,13 @@ fun dayMonthText(date: LocalDate): String = date.format(dayMonth).replace(".", "
 
 fun timeText(time: LocalTime): String = time.format(hourMinute)
 
-fun deadlineText(deadline: OffsetDateTime): String = timeText(deadline.atZoneSameInstant(ZoneId.systemDefault()).toLocalTime())
+fun localTimeText(dateTime: OffsetDateTime): String = timeText(dateTime.atZoneSameInstant(ZoneId.systemDefault()).toLocalTime())
+
+fun feedDayTitle(date: LocalDate, today: LocalDate = LocalDate.now()): String = when (date) {
+    today -> "Hoje"
+    today.minusDays(1) -> "Ontem"
+    else -> date.format(weekdayFullDate)
+}
 
 fun recurrenceText(recurrence: TaskRecurrence): String = when (recurrence) {
     TaskRecurrence.Daily -> "todos os dias"

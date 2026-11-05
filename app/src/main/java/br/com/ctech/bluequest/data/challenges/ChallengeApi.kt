@@ -1,6 +1,8 @@
 package br.com.ctech.bluequest.data.challenges
 
 import br.com.ctech.bluequest.domain.models.ChallengeDetail
+import br.com.ctech.bluequest.domain.models.ChallengeFeedItem
+import br.com.ctech.bluequest.domain.models.ChallengeFeedPage
 import br.com.ctech.bluequest.domain.models.ChallengeParticipant
 import br.com.ctech.bluequest.domain.models.ChallengeState
 import br.com.ctech.bluequest.domain.models.ChallengeStats
@@ -19,6 +21,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -39,6 +42,9 @@ interface ChallengeApi {
     @Multipart
     @POST("uploads/completion-photo")
     suspend fun uploadCompletionPhoto(@Part photo: MultipartBody.Part): UploadedPhotoResponse
+
+    @GET("challenges/{id}/feed")
+    suspend fun feed(@Path("id") id: Int, @Query("before") before: Int?): FeedResponse
 }
 
 @Serializable
@@ -237,3 +243,34 @@ data class CompleteTaskRequest(
 
 @Serializable
 data class UploadedPhotoResponse(val path: String)
+
+@Serializable
+data class FeedResponse(
+    val items: List<FeedItemDto>,
+    @SerialName("next_before") val nextBefore: Int? = null,
+) {
+    fun toDomain() = ChallengeFeedPage(items = items.map { it.toDomain() }, nextBefore = nextBefore)
+}
+
+@Serializable
+data class FeedItemDto(
+    val id: Int,
+    val name: String,
+    @SerialName("is_you") val isYou: Boolean,
+    @SerialName("task_name") val taskName: String,
+    val points: Int,
+    @SerialName("occurrence_date") val occurrenceDate: String,
+    @SerialName("completed_at") val completedAt: String,
+    @SerialName("photo_url") val photoUrl: String? = null,
+) {
+    fun toDomain() = ChallengeFeedItem(
+        id = id,
+        name = name,
+        isYou = isYou,
+        taskName = taskName,
+        points = points,
+        occurrenceDate = LocalDate.parse(occurrenceDate),
+        completedAt = OffsetDateTime.parse(completedAt),
+        photoUrl = photoUrl,
+    )
+}

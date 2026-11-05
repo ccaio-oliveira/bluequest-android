@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -38,21 +42,28 @@ import br.com.ctech.bluequest.designsystem.BQFont
 import br.com.ctech.bluequest.designsystem.BQRadius
 import br.com.ctech.bluequest.designsystem.BQSpacing
 import br.com.ctech.bluequest.designsystem.BQTypeScale
+import br.com.ctech.bluequest.designsystem.components.BQButton
+import br.com.ctech.bluequest.designsystem.components.BQButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQErrorState
 import br.com.ctech.bluequest.designsystem.components.BQIconButton
 import br.com.ctech.bluequest.designsystem.components.BQListGroup
+import br.com.ctech.bluequest.designsystem.components.BQOverline
 import br.com.ctech.bluequest.designsystem.components.BQProgressBar
 import br.com.ctech.bluequest.designsystem.components.BQSegmentedControl
+import br.com.ctech.bluequest.designsystem.components.FeedRow
 import br.com.ctech.bluequest.designsystem.components.ParticipantRow
 import br.com.ctech.bluequest.designsystem.components.RankingRow
 import br.com.ctech.bluequest.designsystem.components.StatTile
 import br.com.ctech.bluequest.designsystem.components.StatTileTone
 import br.com.ctech.bluequest.designsystem.components.TaskCard
 import br.com.ctech.bluequest.domain.models.ChallengeDetail
+import br.com.ctech.bluequest.domain.models.ChallengeFeedItem
 import br.com.ctech.bluequest.domain.models.ChallengeParticipant
 import br.com.ctech.bluequest.domain.models.ChallengeState
 import br.com.ctech.bluequest.domain.models.OccurrenceState
 import br.com.ctech.bluequest.features.challenges.dayMonthText
+import br.com.ctech.bluequest.features.challenges.feedDayTitle
+import br.com.ctech.bluequest.features.challenges.localTimeText
 import br.com.ctech.bluequest.features.challenges.periodText
 import br.com.ctech.bluequest.features.challenges.recurrenceText
 import br.com.ctech.bluequest.features.challenges.timeText
@@ -62,13 +73,14 @@ private enum class DetailSection(val title: String) {
     You("Você"),
     People("Pessoas"),
     Tasks("Tarefas"),
+    Feed("Feed"),
 }
 
 @Composable
 fun ChallengeDetailRoute(
     challengeId: Int,
     onBack: () -> Unit,
-    viewModel: ChallengeDetailViewModel = hiltViewModel<ChallengeDetailViewModel, ChallengeDetailViewModel.Factory>(creationCallback = { factory -> factory.create(challengeId) })
+    viewModel: ChallengeDetailViewModel = hiltViewModel<ChallengeDetailViewModel, ChallengeDetailViewModel.Factory>(creationCallback = { factory -> factory.create(challengeId) }),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -81,7 +93,9 @@ fun ChallengeDetailRoute(
         state = state,
         onBack = onBack,
         onRefresh = viewModel::refresh,
-        onRetry = viewModel::load
+        onRetry = viewModel::load,
+        onFeedVisible = viewModel::onFeedVisible,
+        onLoadMoreFeed = viewModel::loadMoreFeed,
     )
 }
 
@@ -92,9 +106,16 @@ fun ChallengeDetailScreen(
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
+    onFeedVisible: () -> Unit,
+    onLoadMoreFeed: () -> Unit,
 ) {
     val detail = state.detail
     var section by rememberSaveable { mutableStateOf(DetailSection.Ranking) }
+    var openPhotoItemId by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(section) {
+        if (section == DetailSection.Feed) onFeedVisible()
+    }
 
     if (detail == null) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -130,27 +151,48 @@ fun ChallengeDetailScreen(
                 top = BQSpacing.sp2,
                 bottom = BQSpacing.sp6
             ),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            item { Header(detail = detail, onBack = onBack) }
-            item { Progress(detail = detail) }
-
             item {
-                BQSegmentedControl(
-                    options = DetailSection.entries.map { it.title },
-                    selectedIndex = section.ordinal,
-                    onSelect = { section = DetailSection.entries[it] },
-                )
-            }
-
-            item {
-                when (section) {
-                    DetailSection.Ranking -> RankingSection(detail)
-                    DetailSection.You -> YouSection(detail)
-                    DetailSection.People -> PeopleSection(detail)
-                    DetailSection.Tasks -> TasksSection(detail)
+                Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                    Header(detail = detail, onBack = onBack)
+                    Progress(detail = detail)
+                    BQSegmentedControl(
+                        options = DetailSection.entries.map { it.title },
+                        selectedIndex = section.ordinal,
+                        onSelect = { section = DetailSection.entries[it] },
+                    )
                 }
             }
+
+            if (section == DetailSection.Feed) {
+                feedSection(
+                    state = state,
+                    onOpenPhoto = { openPhotoItemId = it.id },
+                    onLoadMore = onLoadMoreFeed,
+                )
+            } else {
+                item {
+                    Box(modifier = Modifier.padding(top = 18.dp)) {
+                        when (section) {
+                            DetailSection.Ranking -> RankingSection(detail)
+                            DetailSection.You -> YouSection(detail)
+                            DetailSection.People -> PeopleSection(detail)
+                            DetailSection.Tasks -> TasksSection(detail)
+                            DetailSection.Feed -> Unit
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    state.feedItems?.firstOrNull { it.id == openPhotoItemId }?.let { item ->
+        item.photoUrl?.let { url ->
+            PhotoViewer(
+                url = url,
+                caption = "${item.name} · ${item.taskName} · ${dayMonthText(item.occurrenceDate)}, ${localTimeText(item.completedAt)}",
+                onClose = { openPhotoItemId = null }
+            )
         }
     }
 }
@@ -332,5 +374,91 @@ private fun TasksSection(detail: ChallengeDetail) {
             style = BQFont.body(12.sp),
             color = BQColors.text3
         )
+    }
+}
+
+private fun LazyListScope.feedSection(
+    state: ChallengeDetailUiState,
+    onOpenPhoto: (ChallengeFeedItem) -> Unit,
+    onLoadMore: () -> Unit,
+) {
+    val feed = state.feedItems
+
+    if (feed.isNullOrEmpty()) {
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = BQSpacing.sp5),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (state.isLoadingFeed) {
+                    CircularProgressIndicator(color = BQColors.text3)
+                } else {
+                    Text(
+                        text = state.feedError ?: "Nenhuma conclusão ainda. Quando alguém concluir uma tarefa, ela aparece aqui.",
+                        style = BQFont.body(BQTypeScale.caption),
+                        color = if (state.feedError != null) BQColors.red else BQColors.text3,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+
+        return
+    }
+
+    feed.groupBy { it.occurrenceDate }.forEach { (date, dayItems) ->
+        item(key = "feed-day-$date") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = BQSpacing.sp5),
+                contentAlignment = Alignment.Center,
+            ) {
+                BQOverline(feedDayTitle(date))
+            }
+        }
+
+        items(dayItems, key = { it.id }) { item ->
+            FeedRow(
+                taskName = item.taskName,
+                points = item.points,
+                name = item.name,
+                isYou = item.isYou,
+                timeText = localTimeText(item.completedAt),
+                photoUrl = item.photoUrl,
+                onOpenPhoto = { onOpenPhoto(item) },
+                modifier = Modifier.padding(top = BQSpacing.sp2),
+            )
+        }
+    }
+
+    if (state.feedError != null) {
+        item {
+            Text(
+                text = state.feedError,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = BQSpacing.sp3),
+                style = BQFont.body(BQTypeScale.caption),
+                color = BQColors.red,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+
+    if (state.feedCursor != null) {
+        item {
+            BQButton(
+                title = "Ver mais antigas",
+                onClick = onLoadMore,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = BQSpacing.sp3),
+                variant = BQButtonVariant.Ghost,
+                isLoading = state.isLoadingFeed,
+            )
+        }
     }
 }

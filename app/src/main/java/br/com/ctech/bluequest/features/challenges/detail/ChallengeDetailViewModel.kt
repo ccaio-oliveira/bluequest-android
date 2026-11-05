@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import br.com.ctech.bluequest.data.challenges.ChallengeRepository
 import br.com.ctech.bluequest.data.network.ApiError
 import br.com.ctech.bluequest.domain.models.ChallengeDetail
+import br.com.ctech.bluequest.domain.models.ChallengeFeedItem
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -20,6 +21,10 @@ data class ChallengeDetailUiState(
     val detail: ChallengeDetail? = null,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+    val feedItems: List<ChallengeFeedItem>? = null,
+    val feedCursor: Int? = null,
+    val isLoadingFeed: Boolean = false,
+    val feedError: String? = null,
 )
 
 @HiltViewModel(assistedFactory = ChallengeDetailViewModel.Factory::class)
@@ -36,6 +41,7 @@ class ChallengeDetailViewModel @AssistedInject constructor(
     val uiState: StateFlow<ChallengeDetailUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
+    private var feedJob: Job? = null
 
     fun load() {
         fetch(isRefresh = false)
@@ -43,6 +49,21 @@ class ChallengeDetailViewModel @AssistedInject constructor(
 
     fun refresh() {
         fetch(isRefresh = true)
+
+        val state = _uiState.value
+        if (state.feedItems != null || state.feedError != null) {
+            loadFeed(reset = true)
+        }
+    }
+
+    fun onFeedVisible() {
+        if (_uiState.value.feedItems == null) {
+            loadFeed(reset = true)
+        }
+    }
+
+    fun loadMoreFeed() {
+        loadFeed(reset = false)
     }
 
     private fun fetch(isRefresh: Boolean) {
@@ -56,6 +77,29 @@ class ChallengeDetailViewModel @AssistedInject constructor(
                 _uiState.update { it.copy(detail = detail, isRefreshing = false) }
             } catch (e: ApiError) {
                 _uiState.update { it.copy(isRefreshing = false, errorMessage = e.message) }
+            }
+        }
+    }
+
+    private fun loadFeed(reset: Boolean) {
+        if (feedJob?.isActive == true) return
+
+        val before = if (reset) null else _uiState.value.feedCursor
+        _uiState.update { it.copy(isLoadingFeed = true, feedError = null) }
+
+        feedJob = viewModelScope.launch {
+            try {
+                val page = repository.feed(challengeId, before)
+
+                _uiState.update {
+                    it.copy(
+                        feedItems = if (reset) page.items else it.feedItems.orEmpty() + page.items,
+                        feedCursor = page.nextBefore,
+                        isLoadingFeed = false,
+                    )
+                }
+            } catch (e: ApiError) {
+                _uiState.update { it.copy(isLoadingFeed = false, feedError = e.message) }
             }
         }
     }
