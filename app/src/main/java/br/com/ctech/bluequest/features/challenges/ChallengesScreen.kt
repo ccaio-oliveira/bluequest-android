@@ -47,6 +47,8 @@ import br.com.ctech.bluequest.designsystem.BQFont
 import br.com.ctech.bluequest.designsystem.BQRadius
 import br.com.ctech.bluequest.designsystem.BQSpacing
 import br.com.ctech.bluequest.designsystem.BQTypeScale
+import br.com.ctech.bluequest.designsystem.components.BQButton
+import br.com.ctech.bluequest.designsystem.components.BQButtonSize
 import br.com.ctech.bluequest.designsystem.components.BQChip
 import br.com.ctech.bluequest.designsystem.components.BQEmptyState
 import br.com.ctech.bluequest.designsystem.components.BQErrorState
@@ -64,6 +66,7 @@ import java.time.LocalDate
 @Composable
 fun ChallengesRoute(
     onOpenChallenge: (Int) -> Unit,
+    onCreateChallenge: () -> Unit,
     viewModel: ChallengesViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -79,6 +82,7 @@ fun ChallengesRoute(
         onRefresh = viewModel::refresh,
         onRetry = viewModel::load,
         onOpenChallenge = onOpenChallenge,
+        onCreateChallenge = onCreateChallenge,
         onCompleteTask = viewModel::completeTask,
         onPointsPopFinished = viewModel::onPointsPopFinished,
         onToastFinished = viewModel::onToastFinished
@@ -93,6 +97,7 @@ fun ChallengesScreen(
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     onOpenChallenge: (Int) -> Unit,
+    onCreateChallenge: () -> Unit,
     onCompleteTask: (TodayOccurrence, Uri?) -> Unit,
     onPointsPopFinished: () -> Unit,
     onToastFinished: () -> Unit,
@@ -112,7 +117,10 @@ fun ChallengesScreen(
                 BQEmptyState(
                     icon = R.drawable.ic_flag_fill,
                     title = "Nenhum desafio ainda",
-                    message = "Crie um desafio com tarefas e pontos, convide pessoas e acompanhem o ranking. Convites recebidos entram automaticamente."
+                    message = "Crie um desafio com tarefas e pontos, convide pessoas e acompanhem o ranking. Convites recebidos entram automaticamente.",
+                    action = {
+                        BQButton(title = "Criar desafio", onClick = onCreateChallenge, icon = R.drawable.ic_add)
+                    }
                 )
             }
 
@@ -202,6 +210,18 @@ fun ChallengesScreen(
                                 textAlign = TextAlign.Center
                             )
                         }
+                    }
+
+                    item {
+                        BQButton(
+                            title = "Criar desafio",
+                            onClick = onCreateChallenge,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                            icon = R.drawable.ic_add,
+                            size = BQButtonSize.Large
+                        )
                     }
                 }
             }

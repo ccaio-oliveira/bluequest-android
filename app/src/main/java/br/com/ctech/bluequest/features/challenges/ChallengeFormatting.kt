@@ -14,6 +14,7 @@ private val weekdayDayMonth = DateTimeFormatter.ofPattern("EEEE, d MMM", portugu
 private val hourMinute = DateTimeFormatter.ofPattern("HH:mm")
 private val weekdayNames = mapOf(1 to "dom", 2 to "seg", 3 to "ter", 4 to "qua", 5 to "qui", 6 to "sex", 7 to "sáb")
 private val weekdayFullDate = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", portuguese)
+private val weekdayShortDate = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", portuguese)
 
 fun periodText(start: LocalDate, end: LocalDate): String {
     val endText = dayMonthText(end)
@@ -53,3 +54,5 @@ fun recurrenceText(recurrence: TaskRecurrence): String = when (recurrence) {
     else recurrence.dates.joinToString(", ") { dayMonthText(it) }
     is TaskRecurrence.Weekdays -> recurrence.days.sorted().mapNotNull { weekdayNames[it] }.joinToString("/")
 }
+
+fun fullDateText(date: LocalDate): String = date.format(weekdayShortDate).replace(".", "")

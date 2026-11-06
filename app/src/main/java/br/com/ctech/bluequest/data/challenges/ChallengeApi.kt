@@ -8,6 +8,8 @@ import br.com.ctech.bluequest.domain.models.ChallengeState
 import br.com.ctech.bluequest.domain.models.ChallengeStats
 import br.com.ctech.bluequest.domain.models.ChallengeSummary
 import br.com.ctech.bluequest.domain.models.ChallengeTask
+import br.com.ctech.bluequest.domain.models.NewChallenge
+import br.com.ctech.bluequest.domain.models.NewTask
 import br.com.ctech.bluequest.domain.models.OccurrenceState
 import br.com.ctech.bluequest.domain.models.TaskRecurrence
 import br.com.ctech.bluequest.domain.models.TodayOccurrence
@@ -25,6 +27,7 @@ import retrofit2.http.Query
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
 interface ChallengeApi {
     @GET("challenges")
@@ -45,6 +48,9 @@ interface ChallengeApi {
 
     @GET("challenges/{id}/feed")
     suspend fun feed(@Path("id") id: Int, @Query("before") before: Int?): FeedResponse
+
+    @POST("challenges")
+    suspend fun createChallenge(@Body body: CreateChallengeRequest)
 }
 
 @Serializable
@@ -274,3 +280,50 @@ data class FeedItemDto(
         photoUrl = photoUrl,
     )
 }
+
+@Serializable
+data class CreateChallengeRequest(
+    val name: String,
+    val description: String? = null,
+    @SerialName("start_date") val startDate: String,
+    @SerialName("end_date") val endDate: String,
+    val timezone: String,
+    val tasks: List<NewTaskDto>,
+)
+
+@Serializable
+data class NewTaskDto(
+    val name: String,
+    val points: Int,
+    @SerialName("recurrence_type") val recurrenceType: String,
+    @SerialName("recurrence_weekdays") val recurrenceWeekdays: List<Int>? = null,
+    @SerialName("recurrence_dates") val recurrenceDates: List<String>? = null,
+    @SerialName("recurrence_times_per_week") val recurrenceTimesPerWeek: Int? = null,
+    @SerialName("deadline_time") val deadlineTime: String,
+    @SerialName("photo_requirement") val photoRequirement: String,
+)
+
+fun NewChallenge.toRequest() = CreateChallengeRequest(
+    name = name,
+    description = description,
+    startDate = startDate.toString(),
+    endDate = endDate.toString(),
+    timezone = timezone,
+    tasks = tasks.map { it.toDto() }
+)
+
+private fun NewTask.toDto() = NewTaskDto(
+    name = name,
+    points = points,
+    recurrenceType = when (recurrence) {
+        TaskRecurrence.Daily -> "daily"
+        is TaskRecurrence.Weekdays -> "weekdays"
+        is TaskRecurrence.TimesPerWeek -> "weekly"
+        is TaskRecurrence.Dates -> "dates"
+    },
+    recurrenceWeekdays = (recurrence as? TaskRecurrence.Weekdays)?.days,
+    recurrenceDates = (recurrence as? TaskRecurrence.Dates)?.dates?.map { it.toString() },
+    recurrenceTimesPerWeek = (recurrence as? TaskRecurrence.TimesPerWeek)?.times,
+    deadlineTime = deadline.format(DateTimeFormatter.ofPattern("HH:mm")),
+    photoRequirement = if (requiresPhoto) "required" else "none",
+)

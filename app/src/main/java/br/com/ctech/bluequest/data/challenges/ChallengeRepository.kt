@@ -4,6 +4,7 @@ import br.com.ctech.bluequest.data.network.apiCall
 import br.com.ctech.bluequest.domain.models.ChallengeDetail
 import br.com.ctech.bluequest.domain.models.ChallengeFeedPage
 import br.com.ctech.bluequest.domain.models.ChallengeSummary
+import br.com.ctech.bluequest.domain.models.NewChallenge
 import br.com.ctech.bluequest.domain.models.TodayOccurrence
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -32,4 +33,8 @@ class ChallengeRepository @Inject constructor(
     }
 
     suspend fun feed(challengeId: Int, before: Int? = null): ChallengeFeedPage = apiCall { api.feed(challengeId, before) }.toDomain()
+
+    suspend fun createChallenge(challenge: NewChallenge) {
+        apiCall { api.createChallenge(challenge.toRequest()) }
+    }
 }
