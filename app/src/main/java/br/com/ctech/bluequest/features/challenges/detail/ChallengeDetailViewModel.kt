@@ -6,6 +6,7 @@ import br.com.ctech.bluequest.data.challenges.ChallengeRepository
 import br.com.ctech.bluequest.data.network.ApiError
 import br.com.ctech.bluequest.domain.models.ChallengeDetail
 import br.com.ctech.bluequest.domain.models.ChallengeFeedItem
+import br.com.ctech.bluequest.domain.models.ChallengeInvite
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -25,6 +26,12 @@ data class ChallengeDetailUiState(
     val feedCursor: Int? = null,
     val isLoadingFeed: Boolean = false,
     val feedError: String? = null,
+    val inviteSheet: InviteSheetState? = null,
+)
+
+data class InviteSheetState(
+    val invite: ChallengeInvite? = null,
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel(assistedFactory = ChallengeDetailViewModel.Factory::class)
@@ -64,6 +71,23 @@ class ChallengeDetailViewModel @AssistedInject constructor(
 
     fun loadMoreFeed() {
         loadFeed(reset = false)
+    }
+
+    fun onOpenInvite() {
+        _uiState.update { it.copy(inviteSheet = InviteSheetState()) }
+
+        viewModelScope.launch {
+            try {
+                val invite = repository.invite(challengeId)
+                _uiState.update { it.copy(inviteSheet = it.inviteSheet?.copy(invite = invite))}
+            } catch (e: ApiError) {
+                _uiState.update { it.copy(inviteSheet = it.inviteSheet?.copy(errorMessage = e.message)) }
+            }
+        }
+    }
+
+    fun onDismissInvite() {
+        _uiState.update { it.copy(inviteSheet = null) }
     }
 
     private fun fetch(isRefresh: Boolean) {

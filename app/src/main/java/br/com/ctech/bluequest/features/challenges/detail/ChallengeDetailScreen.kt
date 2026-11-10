@@ -46,6 +46,7 @@ import br.com.ctech.bluequest.designsystem.components.BQButton
 import br.com.ctech.bluequest.designsystem.components.BQButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQErrorState
 import br.com.ctech.bluequest.designsystem.components.BQIconButton
+import br.com.ctech.bluequest.designsystem.components.BQIconButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQListGroup
 import br.com.ctech.bluequest.designsystem.components.BQOverline
 import br.com.ctech.bluequest.designsystem.components.BQProgressBar
@@ -80,6 +81,7 @@ private enum class DetailSection(val title: String) {
 fun ChallengeDetailRoute(
     challengeId: Int,
     onBack: () -> Unit,
+    onPreviewInvite: (String) -> Unit,
     viewModel: ChallengeDetailViewModel = hiltViewModel<ChallengeDetailViewModel, ChallengeDetailViewModel.Factory>(creationCallback = { factory -> factory.create(challengeId) }),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -96,7 +98,17 @@ fun ChallengeDetailRoute(
         onRetry = viewModel::load,
         onFeedVisible = viewModel::onFeedVisible,
         onLoadMoreFeed = viewModel::loadMoreFeed,
+        onOpenInvite = viewModel::onOpenInvite,
     )
+
+    state.inviteSheet?.let { inviteSheet ->
+        InviteSheet(
+            challengeName = state.detail?.name.orEmpty(),
+            state = inviteSheet,
+            onPreview = onPreviewInvite,
+            onDismiss = viewModel::onDismissInvite,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,6 +120,7 @@ fun ChallengeDetailScreen(
     onRetry: () -> Unit,
     onFeedVisible: () -> Unit,
     onLoadMoreFeed: () -> Unit,
+    onOpenInvite: () -> Unit,
 ) {
     val detail = state.detail
     var section by rememberSaveable { mutableStateOf(DetailSection.Ranking) }
@@ -154,7 +167,7 @@ fun ChallengeDetailScreen(
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                    Header(detail = detail, onBack = onBack)
+                    Header(detail = detail, onBack = onBack, onOpenInvite = onOpenInvite)
                     Progress(detail = detail)
                     BQSegmentedControl(
                         options = DetailSection.entries.map { it.title },
@@ -208,7 +221,7 @@ private fun BackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Header(detail: ChallengeDetail, onBack: () -> Unit) {
+private fun Header(detail: ChallengeDetail, onBack: () -> Unit, onOpenInvite: () -> Unit) {
     val participants = if (detail.participantsCount == 1) "1 participante" else "${detail.participantsCount} participantes"
 
     Row(
@@ -226,6 +239,13 @@ private fun Header(detail: ChallengeDetail, onBack: () -> Unit) {
                 maxLines = 2
             )
         }
+
+        BQIconButton(
+            icon = R.drawable.ic_person_add,
+            contentDescription = "Convidar",
+            onClick = onOpenInvite,
+            variant = BQIconButtonVariant.Primary,
+        )
     }
 }
 

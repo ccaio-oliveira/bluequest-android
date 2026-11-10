@@ -46,6 +46,7 @@ import br.com.ctech.bluequest.designsystem.components.BQButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQChip
 import br.com.ctech.bluequest.designsystem.components.BQDateField
 import br.com.ctech.bluequest.designsystem.components.BQIconButton
+import br.com.ctech.bluequest.designsystem.components.BQIconButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQSegmentedControl
 import br.com.ctech.bluequest.designsystem.components.BQTextField
 import br.com.ctech.bluequest.designsystem.components.BQTimeField
@@ -281,7 +282,7 @@ private fun DatesEditor(
                     contentDescription = "Remover data",
                     onClick = { onChange(draft.copy(dates = draft.dates - date)) },
                     size = 32.dp,
-                    isGhost = true,
+                    variant = BQIconButtonVariant.Ghost
                 )
             }
         }

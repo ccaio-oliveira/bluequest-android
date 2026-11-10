@@ -7,7 +7,9 @@ import br.com.ctech.bluequest.data.network.ApiError
 import br.com.ctech.bluequest.data.session.SessionManager
 import br.com.ctech.bluequest.data.session.SessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,6 +19,8 @@ class AppViewModel @Inject constructor(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
     val sessionState: StateFlow<SessionState> = sessionManager.state
+    private val _pendingInviteCode = MutableStateFlow<String?>(null)
+    val pendingInviteCode: StateFlow<String?> = _pendingInviteCode.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -30,6 +34,14 @@ class AppViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun onInviteLink(code: String) {
+        _pendingInviteCode.value = code
+    }
+
+    fun onInviteHandled() {
+        _pendingInviteCode.value = null
     }
 
     fun logout() {

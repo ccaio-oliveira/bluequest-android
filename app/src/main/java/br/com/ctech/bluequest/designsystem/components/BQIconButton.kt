@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import br.com.ctech.bluequest.designsystem.BQColors
 import br.com.ctech.bluequest.designsystem.BQSpacing
 
+enum class BQIconButtonVariant { Neutral, Primary, Ghost }
+
 @Composable
 fun BQIconButton(
     @DrawableRes icon: Int,
@@ -27,15 +29,21 @@ fun BQIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = BQSpacing.hitTarget,
-    isGhost: Boolean = false,
+    variant: BQIconButtonVariant = BQIconButtonVariant.Neutral,
     enabled: Boolean = true,
 ) {
+    val (background, tint) = when (variant) {
+        BQIconButtonVariant.Neutral -> BQColors.bg2 to BQColors.text2
+        BQIconButtonVariant.Primary -> BQColors.blue to BQColors.onBlue
+        BQIconButtonVariant.Ghost -> Color.Transparent to BQColors.text2
+    }
+
     Box(
         modifier = modifier
             .size(size)
             .alpha(if (enabled) 1f else 0.35f)
             .clip(CircleShape)
-            .background(if (isGhost) Color.Transparent else BQColors.bg2)
+            .background(background)
             .clickable(enabled = enabled, role = Role.Button, onClickLabel = contentDescription, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {

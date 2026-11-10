@@ -15,10 +15,16 @@ import br.com.ctech.bluequest.features.auth.AuthRoute
 @Composable
 fun BlueQuestApp(viewModel: AppViewModel = hiltViewModel()) {
     val sessionState by viewModel.sessionState.collectAsStateWithLifecycle()
+    val pendingInviteCode by viewModel.pendingInviteCode.collectAsStateWithLifecycle()
 
     when (val state = sessionState) {
         SessionState.Loading -> Box(Modifier.fillMaxSize().background(BQColors.bg0))
         is SessionState.SignedOut -> AuthRoute()
-        is SessionState.SignedIn -> MainScreen(userName = state.user?.name, onLogout = viewModel::logout)
+        is SessionState.SignedIn -> MainScreen(
+            userName = state.user?.name,
+            onLogout = viewModel::logout,
+            pendingInviteCode = pendingInviteCode,
+            onInviteHandled = viewModel::onInviteHandled
+        )
     }
 }

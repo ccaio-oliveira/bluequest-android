@@ -3,11 +3,14 @@ package br.com.ctech.bluequest.data.challenges
 import br.com.ctech.bluequest.domain.models.ChallengeDetail
 import br.com.ctech.bluequest.domain.models.ChallengeFeedItem
 import br.com.ctech.bluequest.domain.models.ChallengeFeedPage
+import br.com.ctech.bluequest.domain.models.ChallengeInvite
 import br.com.ctech.bluequest.domain.models.ChallengeParticipant
 import br.com.ctech.bluequest.domain.models.ChallengeState
 import br.com.ctech.bluequest.domain.models.ChallengeStats
 import br.com.ctech.bluequest.domain.models.ChallengeSummary
 import br.com.ctech.bluequest.domain.models.ChallengeTask
+import br.com.ctech.bluequest.domain.models.InvitePreview
+import br.com.ctech.bluequest.domain.models.InviteState
 import br.com.ctech.bluequest.domain.models.NewChallenge
 import br.com.ctech.bluequest.domain.models.NewTask
 import br.com.ctech.bluequest.domain.models.OccurrenceState
@@ -51,6 +54,15 @@ interface ChallengeApi {
 
     @POST("challenges")
     suspend fun createChallenge(@Body body: CreateChallengeRequest)
+
+    @GET("challenges/{id}/invite")
+    suspend fun invite(@Path("id") id: Int): InviteDto
+
+    @GET("invites/{code}")
+    suspend fun invitePreview(@Path("code") code: String): InvitePreviewDto
+
+    @POST("invites/{code}/accept")
+    suspend fun acceptInvite(@Path("code") code: String): AcceptInviteResponse
 }
 
 @Serializable
@@ -327,3 +339,57 @@ private fun NewTask.toDto() = NewTaskDto(
     deadlineTime = deadline.format(DateTimeFormatter.ofPattern("HH:mm")),
     photoRequirement = if (requiresPhoto) "required" else "none",
 )
+
+@Serializable
+data class InviteDto(
+    val enabled: Boolean,
+    val code: String? = null,
+    val link: String? = null,
+) {
+    fun toDomain() = ChallengeInvite(isEnabled = enabled, code = code, link = link)
+}
+
+@Serializable
+data class InvitePreviewDto(
+    val state: String,
+    val challenge: InviteChallengeDto? = null,
+) {
+    fun toDomain() = InvitePreview(
+        state = when (state) {
+            "valid" -> InviteState.Valid
+            "challenge_closed" -> InviteState.ChallengeClosed
+            "already_participant" -> InviteState.AlreadyParticipant
+            else -> InviteState.Invalid
+        },
+        challengeId = challenge?.id,
+        name = challenge?.name.orEmpty(),
+        startDate = challenge?.startDate?.let(LocalDate::parse),
+        endDate = challenge?.endDate?.let(LocalDate::parse),
+        invitedBy = challenge?.invitedBy,
+        participantNames = challenge?.participants.orEmpty().map { it.name },
+        participantsCount = challenge?.participantsCount ?: 0,
+        totalDays = challenge?.totalDays ?: 0,
+        tasksCount = challenge?.tasksCount ?: 0,
+        maxPointsPerDay = challenge?.maxPointsPerDay ?: 0,
+    )
+}
+
+@Serializable
+data class InviteChallengeDto(
+    val id: Int,
+    val name: String,
+    @SerialName("start_date") val startDate: String,
+    @SerialName("end_date") val endDate: String,
+    @SerialName("total_days") val totalDays: Int,
+    @SerialName("participants_count") val participantsCount: Int,
+    val participants: List<InviteParticipantDto> = emptyList(),
+    @SerialName("invited_by") val invitedBy: String? = null,
+    @SerialName("tasks_count") val tasksCount: Int,
+    @SerialName("max_points_per_day") val maxPointsPerDay: Int,
+)
+
+@Serializable
+data class InviteParticipantDto(val name: String)
+
+@Serializable
+data class AcceptInviteResponse(@SerialName("challenge_id") val challengeId: Int)

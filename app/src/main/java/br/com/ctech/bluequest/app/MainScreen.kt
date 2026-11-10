@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,6 +22,7 @@ import br.com.ctech.bluequest.designsystem.components.BQButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQEmptyState
 import br.com.ctech.bluequest.designsystem.components.BQTabBar
 import br.com.ctech.bluequest.features.challenges.ChallengesListKey
+import br.com.ctech.bluequest.features.challenges.InviteKey
 import br.com.ctech.bluequest.features.challenges.rememberChallengesEntries
 
 enum class MainTab(val item: BQTabBarItem) {
@@ -32,10 +34,23 @@ enum class MainTab(val item: BQTabBarItem) {
 }
 
 @Composable
-fun MainScreen(userName: String?, onLogout: () -> Unit) {
+fun MainScreen(
+    userName: String?,
+    onLogout: () -> Unit,
+    pendingInviteCode: String?,
+    onInviteHandled: () -> Unit,
+) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Challenges) }
     val challengesBackStack = rememberNavBackStack(ChallengesListKey)
     val challengesEntries = rememberChallengesEntries(challengesBackStack)
+
+    LaunchedEffect(pendingInviteCode) {
+        val code = pendingInviteCode ?: return@LaunchedEffect
+
+        selectedTab = MainTab.Challenges
+        challengesBackStack.add(InviteKey(code))
+        onInviteHandled()
+    }
 
     Scaffold(
         containerColor = BQColors.bg0,

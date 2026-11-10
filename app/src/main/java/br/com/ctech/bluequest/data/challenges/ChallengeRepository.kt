@@ -3,7 +3,9 @@ package br.com.ctech.bluequest.data.challenges
 import br.com.ctech.bluequest.data.network.apiCall
 import br.com.ctech.bluequest.domain.models.ChallengeDetail
 import br.com.ctech.bluequest.domain.models.ChallengeFeedPage
+import br.com.ctech.bluequest.domain.models.ChallengeInvite
 import br.com.ctech.bluequest.domain.models.ChallengeSummary
+import br.com.ctech.bluequest.domain.models.InvitePreview
 import br.com.ctech.bluequest.domain.models.NewChallenge
 import br.com.ctech.bluequest.domain.models.TodayOccurrence
 import okhttp3.MediaType.Companion.toMediaType
@@ -37,4 +39,10 @@ class ChallengeRepository @Inject constructor(
     suspend fun createChallenge(challenge: NewChallenge) {
         apiCall { api.createChallenge(challenge.toRequest()) }
     }
+
+    suspend fun invite(challengeId: Int): ChallengeInvite = apiCall { api.invite(challengeId) }.toDomain()
+
+    suspend fun invitePreview(code: String): InvitePreview = apiCall { api.invitePreview(code) }.toDomain()
+
+    suspend fun acceptInvite(code: String): Int = apiCall { api.acceptInvite(code) }.challengeId
 }

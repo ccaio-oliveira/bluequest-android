@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import br.com.ctech.bluequest.features.challenges.create.CreateChallengeRoute
 import br.com.ctech.bluequest.features.challenges.detail.ChallengeDetailRoute
+import br.com.ctech.bluequest.features.challenges.invite.InviteRoute
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,6 +21,9 @@ data class ChallengeDetailKey(val challengeId: Int) : NavKey
 
 @Serializable
 data object CreateChallengeKey : NavKey
+
+@Serializable
+data class InviteKey(val code: String) : NavKey
 
 @Composable
 fun rememberChallengesEntries(backStack: NavBackStack<NavKey>): List<NavEntry<NavKey>> =
@@ -41,10 +45,22 @@ fun rememberChallengesEntries(backStack: NavBackStack<NavKey>): List<NavEntry<Na
                 CreateChallengeRoute(onClose = { backStack.removeLastOrNull()})
             }
 
+            entry<InviteKey> { key ->
+                InviteRoute(
+                    code = key.code,
+                    onClose = { backStack.removeLastOrNull() },
+                    onOpenChallenge = { id ->
+                        while (backStack.size > 1) backStack.removeLastOrNull()
+                        backStack.add(ChallengeDetailKey(id))
+                    },
+                )
+            }
+
             entry<ChallengeDetailKey> { key ->
                 ChallengeDetailRoute(
                     challengeId = key.challengeId,
-                    onBack = { backStack.removeLastOrNull() }
+                    onBack = { backStack.removeLastOrNull() },
+                    onPreviewInvite = { code -> backStack.add(InviteKey(code))}
                 )
             }
         }

@@ -43,6 +43,7 @@ import br.com.ctech.bluequest.designsystem.components.BQButtonSize
 import br.com.ctech.bluequest.designsystem.components.BQButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQDateField
 import br.com.ctech.bluequest.designsystem.components.BQIconButton
+import br.com.ctech.bluequest.designsystem.components.BQIconButtonVariant
 import br.com.ctech.bluequest.designsystem.components.BQTextField
 import br.com.ctech.bluequest.features.challenges.recurrenceText
 import br.com.ctech.bluequest.features.challenges.timeText
@@ -253,7 +254,7 @@ private fun TaskDraftRow(task: TaskDraft, onEdit: () -> Unit, onRemove: () -> Un
             contentDescription = "Remover tarefa",
             onClick = onRemove,
             size = 32.dp,
-            isGhost = true
+            variant = BQIconButtonVariant.Ghost
         )
     }
 }
